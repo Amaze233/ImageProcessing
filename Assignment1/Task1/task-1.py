@@ -35,12 +35,12 @@ def image_t(im, scale=1.0, rot=45, trans=(50, -50)):
 
 
 if __name__ == '__main__':
-    im = cv2.imread('../images/pearl.jpeg')
+    im = cv2.imread('images/pearl.jpeg')
 
-    scale = 0.5
-    rot = 45
+    scale = 1.2
+    rot = -60
     trans = (0, 0)
     result = image_t(im, scale, rot, trans)
-    cv2.imwrite('../results/affine_result.png', result)
+    cv2.imwrite('results/affine_result-scale{}-rot{}-trans{}.png'.format(scale, rot, trans), result)
     cv2.imshow('result', result)
     cv2.waitKey(0)
