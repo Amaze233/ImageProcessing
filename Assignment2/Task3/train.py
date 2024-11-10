@@ -67,11 +67,8 @@ def training_loop(
     best_loss = float('inf')
     best_model_path = os.path.join(out_dir, "best_model.pth")
     checkpoint_path = os.path.join(out_dir, "checkpoint.pth")
-    start_time = time.time()  # 记录开始时间
     batch_generator = patches.iterate_batches(batch_size)
-    end_time = time.time()  # 记录结束时间
-    print("=========Load Batch Generator==========")
-    print(f"Time taken to load batch generator: {end_time - start_time:.4f} seconds")  # 打印时间差
+
     for i in range(start_iteration, iterations + 1):
         # Get a batch of patches
         ref_batch, pos_batch, neg_batch = next(batch_generator)
@@ -107,12 +104,8 @@ def training_loop(
         if i % 10 == 0:
             print(f"Iteration {i}/{iterations}, Loss: {loss.item():.4f}, Accuracy: {acc.item():.4f}")
 
-    start_time = time.time()  # 记录开始时间
     # Stop the batch generator
     patches.stop()
-    end_time = time.time()  # 记录结束时间
-    print("=========Stop Batch Generator==========")
-    print(f"Time taken to stop batch generator: {end_time - start_time:.4f} seconds")  # 打印时间差
     print(f"Training finished. Best loss: {best_loss:.4f}")
 
 
@@ -123,7 +116,7 @@ def main():
 
     # Hyperparameters
     start_iteration = 1
-    training_iterations = 1000
+    training_iterations = 2000
     batch_size = 128
     learning_rate = 3e-4
     patch_size = 9
@@ -133,7 +126,7 @@ def main():
     # Shortcuts for directories
     root_dir = osp.dirname(osp.abspath(__file__))
     data_dir = osp.join(root_dir, "dataset/KITTI_2015_subset")
-    out_dir = osp.join(root_dir, f"iteration_{training_iterations}", "output/siamese_network")
+    out_dir = osp.join(root_dir, "output/siamese_network", f"iteration_{training_iterations}")
     if not osp.exists(out_dir):
         os.makedirs(out_dir)
 

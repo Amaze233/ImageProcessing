@@ -57,7 +57,7 @@ def compute_disparity_CNN(infer_similarity_metric, img_l, img_r, max_disparity=5
 
 def main():
     # Hyperparameters
-    training_iterations = 1000
+    training_iterations = 2000
     batch_size = 128
     learning_rate = 3e-4
     patch_size = 9
