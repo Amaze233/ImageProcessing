@@ -30,7 +30,7 @@ def hinge_loss(score_pos, score_neg, label):
     # -------------------------------------
     # Hinge Loss: max(0, 1 - score_pos + score_neg)
     # Accuracy: 1 if score_pos > score_neg else 0
-    margin = 1
+    margin = 1  # or 0.2
     loss = torch.clamp(margin + score_neg - score_pos, min=0)
     avg_loss = torch.mean(loss)
     correct_prediction = (score_pos > score_neg).float()
@@ -74,8 +74,8 @@ def training_loop(
         ref_batch, pos_batch, neg_batch = next(batch_generator)
 
         # Pass Forward and calculate score
-        pos_score = calculate_similarity_score(infer_similarity_metric, ref_batch, pos_batch)
-        neg_score = calculate_similarity_score(infer_similarity_metric, ref_batch, neg_batch)
+        pos_score = calculate_similarity_score(infer_similarity_metric, ref_batch, pos_batch).cuda()
+        neg_score = calculate_similarity_score(infer_similarity_metric, ref_batch, neg_batch).cuda()
 
         # Compute loss and accuracy
         labels = torch.ones_like(pos_score)
@@ -105,8 +105,10 @@ def training_loop(
             print(f"Iteration {i}/{iterations}, Loss: {loss.item():.4f}, Accuracy: {acc.item():.4f}")
 
     # Stop the batch generator
-    patches.stop()
+    # patches.stop()
     print(f"Training finished. Best loss: {best_loss:.4f}")
+    del infer_similarity_metric
+    torch.cuda.empty_cache()
 
 
 def main():
@@ -116,8 +118,8 @@ def main():
 
     # Hyperparameters
     start_iteration = 1
-    training_iterations = 2000
-    batch_size = 128
+    training_iterations = 5000
+    batch_size = 32
     learning_rate = 3e-4
     patch_size = 9
     padding = patch_size // 2
@@ -142,6 +144,7 @@ def main():
     infer_similarity_metric = StereoMatchingNetwork()
     # Set to train
     infer_similarity_metric.train()
+    infer_similarity_metric.cuda()
     # uncomment if you don't have a gpu
     # infer_similarity_metric.to('cpu')
     optimizer = torch.optim.SGD(

@@ -3,6 +3,7 @@ import os.path as osp
 
 import cv2
 import numpy as np
+
 from dataset import KITTIDataset
 from matplotlib import pyplot as plt
 
@@ -140,7 +141,8 @@ def visualize_disparity(
 
 def main():
     # Hyperparameters
-    window_size = 3
+    window_size = 14
+
     max_disparity = 50
 
     # Shortcuts

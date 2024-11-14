@@ -7,6 +7,8 @@ from block_matching import add_padding, visualize_disparity
 from dataset import KITTIDataset
 from siamese_neural_network import StereoMatchingNetwork, calculate_similarity_score
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 def compute_disparity_CNN(infer_similarity_metric, img_l, img_r, max_disparity=50):
     """
@@ -14,8 +16,8 @@ def compute_disparity_CNN(infer_similarity_metric, img_l, img_r, max_disparity=5
 
     Args:
         infer_similarity_metric:  pytorch module object
-        img_l: tensor holding the left image
-        img_r: tensor holding the right image
+        img_l: tensor holding the left image (height,width,channels)
+        img_r: tensor holding the right image (height,width,channels)
         max_disparity (int): maximum disparity
 
     Returns:
@@ -26,6 +28,8 @@ def compute_disparity_CNN(infer_similarity_metric, img_l, img_r, max_disparity=5
     # -------------------------------------
     # TODO: ENTER CODE HERE (EXERCISE 8)
     # -------------------------------------
+    img_l = img_l.to(infer_similarity_metric.device)
+    img_r = img_r.to(infer_similarity_metric.device)
     height, width, channels = img_l.shape
     D = torch.zeros((height, width), device=img_l.device)  # 初始化视差图
 
@@ -41,12 +45,10 @@ def compute_disparity_CNN(infer_similarity_metric, img_l, img_r, max_disparity=5
 
         # 计算当前视差的相似度分数
         similarity_score = calculate_similarity_score(infer_similarity_metric, img_l, img_r_shifted)
-
-        # 去掉批次维度，以便将相似度得分与视差图对比更新
-        similarity_score = similarity_score.squeeze(0)
+        similarity_score = similarity_score.squeeze(0)  # (height-8, width-8)
 
         # Find the area to change
-        update_mask = similarity_score > score_map
+        update_mask = similarity_score > score_map # (height-8, width-8)
         score_map[update_mask] = similarity_score[update_mask]
 
         # 更新视差图：如果当前视差的相似度更大，则更新视差
@@ -57,8 +59,8 @@ def compute_disparity_CNN(infer_similarity_metric, img_l, img_r, max_disparity=5
 
 def main():
     # Hyperparameters
-    training_iterations = 2000
-    batch_size = 128
+    training_iterations = 5000
+    batch_size = 32
     learning_rate = 3e-4
     patch_size = 9
     padding = patch_size // 2
@@ -67,7 +69,7 @@ def main():
     # Shortcuts for directories
     root_dir = osp.dirname(osp.abspath(__file__))
     data_dir = osp.join(root_dir, "dataset/KITTI_2015_subset")
-    out_dir = osp.join(root_dir, "output/siamese_network", f"training_iterations_{training_iterations}")
+    out_dir = osp.join(root_dir, "output/siamese_network", f"iteration_{training_iterations}")
     model_path = osp.join(out_dir, "best_model.pth")
     if not osp.exists(out_dir):
         os.makedirs(out_dir)
@@ -76,13 +78,14 @@ def main():
     infer_similarity_metric = StereoMatchingNetwork()
     infer_similarity_metric.load_state_dict(torch.load(model_path))
     infer_similarity_metric.eval()
-    infer_similarity_metric.to("gpu")
+    infer_similarity_metric.to(torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+    # infer_similarity_metric.to('cpu')
 
     # Load KITTI test split
     dataset = KITTIDataset(osp.join(data_dir, "testing"))
     # Loop over test images
     for i in range(len(dataset)):
-        print(f"Processing {i} image")
+        print(f"\nProcessing {i} image")
         # Load images and add padding
         img_left, img_right = dataset[i]
         img_left_padded, img_right_padded = add_padding(img_left, padding), add_padding(
@@ -97,7 +100,7 @@ def main():
             img_left_padded,
             img_right_padded,
             max_disparity=max_disparity,
-        )
+        ).to('cpu')
         # Visulization
         title = (
             f"Disparity map for image {i} with SNN (training iterations {training_iterations}, "

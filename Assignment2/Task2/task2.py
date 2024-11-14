@@ -34,9 +34,10 @@ def local_histogram_equalization(img):
 
 if __name__ == "__main__":
     root_dir = osp.dirname(osp.abspath(__file__))
-    img = cv2.imread(osp.join(root_dir, "moon.png"), cv2.IMREAD_COLOR)
+    img = cv2.imread(osp.join(root_dir, "images/moon.png"), cv2.IMREAD_COLOR)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
+    cv2.imshow("Original", img)
+    cv2.waitKey(0)
     res_hist_equalization = histogram_equalization(img)
     res_local_hist_equalization = local_histogram_equalization(img)
 

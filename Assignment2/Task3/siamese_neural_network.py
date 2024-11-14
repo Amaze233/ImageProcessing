@@ -27,19 +27,20 @@ class StereoMatchingNetwork(torch.nn.Module):
 
         super().__init__()
         gpu = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        self.device = gpu
 
         #######################################
         # -------------------------------------
         # TODO: ENTER CODE HERE (EXERCISE 5)
         # -------------------------------------
         # Define the network architecture here
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=64, kernel_size=3, padding=0)
-        self.relu1 = torch.nn.ReLU()
-        self.conv2 = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=0)
-        self.relu2 = torch.nn.ReLU()
-        self.conv3 = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=0)
-        self.relu3 = torch.nn.ReLU()
-        self.conv4 = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=0)
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, padding=0)
+        self.relu1 = torch.nn.ReLU(inplace=True)
+        self.conv2 = torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding=0)
+        self.relu2 = torch.nn.ReLU(inplace=True)
+        self.conv3 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=0)
+        self.relu3 = torch.nn.ReLU(inplace=True)
+        self.conv4 = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=0)
 
     def forward(self, X):
         """
@@ -58,7 +59,8 @@ class StereoMatchingNetwork(torch.nn.Module):
         # TODO: ENTER CODE HERE (EXERCISE 5)
         # -------------------------------------
         # Implement the forward pass here
-        X = X.permute(0, 3, 1, 2)
+        X = X.permute(0, 3, 1, 2).cuda()
+        # X = X.permute(0, 3, 1, 2)
         X = self.conv1(X)
         X = self.relu1(X)
         X = self.conv2(X)
@@ -69,7 +71,7 @@ class StereoMatchingNetwork(torch.nn.Module):
 
         # Normalize
         X = torch.nn.functional.normalize(X, dim=1, p=2)
-        X = X.permute(0, 2, 3, 1)
+        X = X.permute(0, 2, 3, 1).cuda()
         return X
 
 
@@ -90,7 +92,11 @@ def calculate_similarity_score(infer_similarity_metric, Xl, Xr):
     # -------------------------------------
     # TODO: ENTER CODE HERE (EXERCISE 5)
     # -------------------------------------
-    features_left = infer_similarity_metric(Xl)
+    features_left = infer_similarity_metric(Xl) # Shape: (batch_size, height - 8, width - 8, n_features)
     features_right = infer_similarity_metric(Xr)
-    score = torch.sum(features_left * features_right, dim=-1)
-    return score
+
+    # 计算余弦相似度 (点积)- score = features_left * features_right / ||features_left||*||features_right||
+    # 由于已经对提取的特征值进行过归一化,所以可以直接计算点积
+    cosine_similarity = torch.sum(features_left * features_right, dim=-1)
+    return cosine_similarity # (batch_size, height - 8, width - 8)
+
